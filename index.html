@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en-us">
+	<head>
+		<meta charset="UTF-8">
+
+		<!-- P5 libraries -->
+		<script src="js/p5.min.js"></script>
+
+		<!-- A-Frame libraries -->
+		<script src="js/aframe.min.js"></script>
+
+		<!-- AFrameP5 library -->
+		<script src="js/aframep5.js"></script>
+
+		<!-- P5 Sketch -->
+		<script src="js/sketch.js"></script>
+
+		<script src="../p5/addons/p5.sound.min.js"></script>
+
+	</head>
+	<body>
+
+    <!-- container to hold our VR scene -->
+		<a-scene id="VRScene">
+
+		  <!-- container to hold our assets -->
+		  <a-assets>
+		    <img id="pavement" src="images/pavement.jpg">
+				<img src="images/sky.jpeg" id="sky1">
+				<img src="images/cockpit.png" id="cockpit">
+				<img src="images/ground.jpeg" id="ground">
+				<img src="images/asteroid.jpg" id="asteroid">
+				<a-asset id="cloud.mtl" src="images/cloud.mtl"></a-asset>
+				<a-asset id="cloud.obj" src="images/cloud.obj"></a-asset>
+		  </a-assets>
+			<a-sky id="theSky" src="#sky1"></a-sky>
+
+		</a-scene>
+
+	</body>
+</html>
