@@ -119,55 +119,8 @@ function setup() {
   container.addChild(speedLabel);
   world.camera.cursor.addChild(container);
 
-  accelerateButton = new Cylinder({
-    x: 0.2,
-    y: -0.5,
-    z: 0,
-    red: 0,
-    green: 255,
-    blue: 0,
-    radius: 0.05,
-    height: 0.1,
-    rotationX: 45,
-    enterFunction: function(btn) {
-      usingSpeedControls = true;
-    },
-    leaveFunction: function(btn) {
-      usingSpeedControls = false;
-    },
-    clickFunction: function(btn) {
-      if (planeSpeed < maxPlaneSpeed) {
-        planeSpeed += 0.1;
-        engineSound.setVolume(map(planeSpeed, 0, maxPlaneSpeed, 0, 1));
-      }
-    }
-  });
 
-  deaccelerateButton = new Cylinder({
-    x: -0.2,
-    y: -0.5,
-    z: 0,
-    red: 255,
-    green: 0,
-    blue: 0,
-    radius: 0.05,
-    height: 0.1,
-    rotationX: 45,
-    enterFunction: function(btn) {
-      usingSpeedControls = true;
-    },
-    leaveFunction: function(btn) {
-      usingSpeedControls = false;
-    },
-    clickFunction: function(btn) {
-      if (planeSpeed >= 0.15) {
-        planeSpeed -= 0.1;
-      }
-      engineSound.setVolume(map(planeSpeed, 0, maxPlaneSpeed, 0, 1));
-    }
-  });
-  container.addChild(accelerateButton);
-  container.addChild(deaccelerateButton);
+
 
   // create our gravity sensor (see class below)
   // this object detects what is below the user
@@ -239,6 +192,19 @@ function keyPressed() {
   if (keyCode === 32) { // space bar pressed
     projectiles.push(new Projectile());
     shotSound.play();
+  }
+  if (keyCode === RIGHT_ARROW){
+    if (planeSpeed < maxPlaneSpeed) {
+      planeSpeed += 0.1;
+      engineSound.setVolume(map(planeSpeed, 0, maxPlaneSpeed, 0, 1));
+    }
+  }
+  if (keyCode === LEFT_ARROW){
+    if (planeSpeed >= 0.15) {
+      planeSpeed -= 0.1;
+      engineSound.setVolume(map(planeSpeed, 0, maxPlaneSpeed, 0, 1));
+    }
+
   }
 }
 
