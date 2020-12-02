@@ -259,7 +259,7 @@ function drawProjectiles() {
       // compute distance
       const sphere = asteroidArray[j].sphere;
       const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, sphere.getX(), sphere.getY(), sphere.getZ());
-      if (d <= 2) { // asteroid hit
+      if (d <= 4) { // asteroid hit
         world.remove(sphere);
         asteroidArray.splice(j, 1);
         break;
@@ -526,7 +526,8 @@ class Asteroid {
       z: random(start, end),
       asset: "asteroid",
       radius: 1.5,
-      rotationX: random(0, 360)
+      rotationX: random(0, 360),
+      radius: random(1, 6)
     });
     this.sphere.tag.object3D.userData.asteroid = true;
     world.add(this.sphere);
