@@ -110,7 +110,7 @@ function setup() {
     y: 0,
     z: 0,
     scaleX: 3,
-    scaleY: 3,
+    scaleY: 2,
     transparent: true,
     asset: 'cockpit',
   });
@@ -481,16 +481,16 @@ class Projectile {
       rotationZ: userRotation.z
     });
     world.add(this.container);
-    this.projectile = new Box({
-      x: 0,
-      y: 0,
-      z: 0,
-      width: 0.05,
-      height: 0.05,
-      depth: 0.5,
-      red: 255,
-      blue: 0,
-      green: 0
+    this.projectile = new Cylinder({
+      x: -1,
+      y: -.5,
+      z: 3,
+      height: 1,
+      radius: .1,
+      rotationX: -90,
+      red: 57,
+      green: 255,
+      blue: 20
     });
     // add the projectile to the container
     this.container.addChild(this.projectile);
