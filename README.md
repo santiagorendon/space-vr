@@ -1,1 +1,1 @@
-# space-vr
+# vr-web
