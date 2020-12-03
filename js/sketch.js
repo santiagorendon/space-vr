@@ -280,7 +280,7 @@ class Projectile {
 class Asteroid {
   constructor(start, end) {
     this.sphere = new Sphere({
-      x: random(-10, 10),
+      x: random(-80, 80),
       y: random(2, 30),
       z: random(start, end),
       asset: "asteroid",
