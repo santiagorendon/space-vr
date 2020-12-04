@@ -232,9 +232,24 @@ function collisionDetection() {
     state = 'crash';
   }
   // if we collide with asteroid dont move
-  if (objectAhead && objectAhead.distance < objectAhead.hitDist && (objectAhead.object.el.object3D.userData.asteroid || objectAhead.object.el.object3D.userData.enemyPlane)) {
+  if (objectAhead && objectAhead.distance < objectAhead.object.el.object3D.userData.hitDist && (objectAhead.object.el.object3D.userData.asteroid || objectAhead.object.el.object3D.userData.enemyPlane)) {
     loadGameOver();
     state = 'crash';
+  }
+}
+
+function moveEnemy() {
+  for(let i=0; i < enemyArray.length; i++){
+    const enemyPlane = enemyArray[i];
+    const enemyPlaneShape = enemyArray[i].enemy;
+    enemyPlane.xMovement = map(noise(enemyPlane.xNoiseOffset), 0, 1, -0.3, 0.3);
+    enemyPlane.yMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.1, 0.1);
+    enemyPlane.zMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.3, -0.6);
+    console.log(enemyPlaneShape.getZ())
+    enemyPlaneShape.nudge(enemyPlane.xMovement, enemyPlane.yMovement, enemyPlane.zMovement);
+    enemyPlane.xNoiseOffset += 0.01;
+    enemyPlane.yNoiseOffset += 0.01;
+    enemyPlane.zNoiseOffset += 0.01;
   }
 }
 
@@ -245,6 +260,7 @@ function draw() {
     // increase speed if taking off
     collisionDetection();
     renderNearbyObjects();
+    moveEnemy();
     // dont render objects that the plane no longer sees
     removeAsteroids();
     drawProjectiles();
@@ -304,8 +320,15 @@ class EnemyPlane {
       scaleY: 1,
       scaleZ: 1,
     });
-    this.hitDist = 1.4; // distance from projectile to count as a hit
+    this.xNoiseOffset = random(0, 1000);
+    this.yNoiseOffset = random(1000, 2000);
+    this.zNoiseOffset = random(2000, 3000);
+    this.xMovement = 0;
+    this.yMovement = 0;
+    this.zMovement = 0;
+    this.hitDist = 1.4
     this.enemy.tag.object3D.userData.enemyPlane = true;
+    this.enemy.tag.object3D.userData.hitDist = this.hitDist;
     world.add(this.enemy);
   }
 }
@@ -323,6 +346,7 @@ class Asteroid {
     });
     this.hitDist = radius; // distance from projectile to count as a hit
     this.sphere.tag.object3D.userData.asteroid = true;
+    this.sphere.tag.object3D.userData.hitDist = this.hitDist;
     world.add(this.sphere);
   }
 }
