@@ -22,6 +22,7 @@ var renderDistance = 200;
 var currentRender = 0;
 var renderCushion = 80; //distance to start rendering before reaching render distance
 var asteroidDensity = Math.round(0.1 * renderDistance);
+var enemyPlane
 // to increase performance:
 // decrease renderDistance
 // decrease density of objects
@@ -38,6 +39,20 @@ function setup() {
   world.camera.cursor.show();
   world.setFlying(true);
   container = new Container3D({});
+
+
+  enemyPlane = new OBJ({
+		asset: 'enemy_obj',
+		mtl: 'enemy_mtl',
+		x: 0,
+		y: -1.3,
+		z: -15,
+		rotationY: 90,
+		scaleX: 1,
+		scaleY: 1,
+		scaleZ: 1,
+	});
+	world.add(enemyPlane);
 
   scoreLabel = new Plane({
     x: 0,
