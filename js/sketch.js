@@ -4,6 +4,7 @@ var sensor; // will find objects in front/below the user
 var elevation;
 var state = 'playing';
 var asteroidArray = [];
+var enemyArray = [];
 var projectiles = [];
 var shotDelay = 3;
 var score = 0;
@@ -22,7 +23,6 @@ var renderDistance = 200;
 var currentRender = 0;
 var renderCushion = 80; //distance to start rendering before reaching render distance
 var asteroidDensity = Math.round(0.1 * renderDistance);
-var enemyPlane
 // to increase performance:
 // decrease renderDistance
 // decrease density of objects
@@ -41,18 +41,8 @@ function setup() {
   container = new Container3D({});
 
 
-  enemyPlane = new OBJ({
-		asset: 'enemy_obj',
-		mtl: 'enemy_mtl',
-		x: 0,
-		y: -1.3,
-		z: -15,
-		rotationY: 90,
-		scaleX: 1,
-		scaleY: 1,
-		scaleZ: 1,
-	});
-	world.add(enemyPlane);
+  let enemyPlane = new EnemyPlane();
+  enemyArray.push(enemyPlane);
 
   scoreLabel = new Plane({
     x: 0,
@@ -100,7 +90,7 @@ function setup() {
 
 function mousePressed() {
   if (state === "crash") {
-    restartGame();
+    //restartGame();
   } else {
     projectiles.push(new Projectile());
     shotSound.play();
@@ -138,25 +128,34 @@ function drawProjectiles() {
     projectiles[i].move();
     // get WORLD position for this projectile
     var projectilePosition = projectiles[i].projectile.getWorldPosition();
-    // remove projectiles thay go to far
-    if (projectilePosition.x > 50 || projectilePosition.x < -50 || projectilePosition.z > distanceTraveled + 50 || projectilePosition.z < distanceTraveled - 50) {
+    const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, world.camera.getX(), world.camera.getY(), world.camera.getZ());
+    const collideWithAsteroid = checkCollisions(asteroidArray, "sphere", projectilePosition);
+    const collideWithEnemy = checkCollisions(enemyArray, "enemy", projectilePosition);
+    // remove projectiles thay go to far or collide with an object
+    if (d > 100 || collideWithAsteroid || collideWithEnemy) {
       world.remove(projectiles[i].container);
       projectiles.splice(i, 1);
       i -= 1;
       continue;
+    } else if (checkCollisions(enemyArray, "enemy", projectilePosition)) {
+
     }
-    // otherwise check for collisions with our targets
-    for (let j = 0; j < asteroidArray.length; j++) {
-      // compute distance
-      const sphere = asteroidArray[j].sphere;
-      const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, sphere.getX(), sphere.getY(), sphere.getZ());
-      if (d <= 4) { // asteroid hit
-        world.remove(sphere);
-        asteroidArray.splice(j, 1);
-        break;
-      }
+
+  }
+}
+
+function checkCollisions(objectArray, objectType, projectilePosition) {
+  for (let j = 0; j < objectArray.length; j++) {
+    // compute distance
+    const object = objectArray[j][objectType];
+    const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, object.getX(), object.getY(), object.getZ());
+    if (d <= objectArray[j].hitDist) { // asteroid hit
+      world.remove(object);
+      objectArray.splice(j, 1);
+      return true;
     }
   }
+  return false;
 }
 
 function removeAsteroids() {
@@ -233,7 +232,7 @@ function collisionDetection() {
     state = 'crash';
   }
   // if we collide with asteroid dont move
-  if (objectAhead && objectAhead.distance < 1.4 && objectAhead.object.el.object3D.userData.asteroid) {
+  if (objectAhead && objectAhead.distance < objectAhead.hitDist && (objectAhead.object.el.object3D.userData.asteroid || objectAhead.object.el.object3D.userData.enemyPlane)) {
     loadGameOver();
     state = 'crash';
   }
@@ -292,16 +291,37 @@ class Projectile {
   }
 }
 
+class EnemyPlane {
+  constructor() {
+    this.enemy = new OBJ({
+      asset: 'enemy_obj',
+      mtl: 'enemy_mtl',
+      x: 0,
+      y: -1.3,
+      z: -15,
+      rotationY: 90,
+      scaleX: 1,
+      scaleY: 1,
+      scaleZ: 1,
+    });
+    this.hitDist = 1.4; // distance from projectile to count as a hit
+    this.enemy.tag.object3D.userData.enemyPlane = true;
+    world.add(this.enemy);
+  }
+}
+
 class Asteroid {
   constructor(start, end) {
+    let radius = random(0, 6);
     this.sphere = new Sphere({
       x: random(-80, 80),
       y: random(2, 30),
       z: random(start, end),
       asset: "asteroid",
       rotationX: random(0, 360),
-      radius: random(1, 6)
+      radius: radius
     });
+    this.hitDist = radius; // distance from projectile to count as a hit
     this.sphere.tag.object3D.userData.asteroid = true;
     world.add(this.sphere);
   }
@@ -335,7 +355,7 @@ class Sensor {
 
       // determine which "solid" items are in front of the user
       for (var i = 0; i < this.intersectsFront.length; i++) {
-        if (!(this.intersectsFront[i].object.el.object3D.userData.asteroid)) {
+        if (!(this.intersectsFront[i].object.el.object3D.userData.asteroid || this.intersectsFront[i].object.el.object3D.userData.enemyPlane)) {
           this.intersectsFront.splice(i, 1);
           i--;
         }
@@ -359,7 +379,7 @@ class Sensor {
 
     // determine which "solid" or "stairs" items are below
     for (var i = 0; i < this.intersects.length; i++) {
-      if (!(this.intersects[i].object.el.object3D.userData.asteroid)) {
+      if (!(this.intersects[i].object.el.object3D.userData.asteroid || this.intersects[i].object.el.object3D.userData.enemyPlane)) {
         this.intersects.splice(i, 1);
         i--;
       }
