@@ -33,6 +33,13 @@ function preload() {
   crashSound = loadSound('sounds/crash.mp3');
 }
 
+function createEnemyPlanes() {
+  for(let i=0; i < 1; i++){
+    let enemyPlane = new EnemyPlane(random(-4, 4), random(-4, 4), -random(4, 8));
+    enemyArray.push(enemyPlane);
+  }
+}
+
 function setup() {
   noCanvas();
   world = new World('VRScene');
@@ -40,9 +47,7 @@ function setup() {
   world.setFlying(true);
   container = new Container3D({});
 
-
-  let enemyPlane = new EnemyPlane();
-  enemyArray.push(enemyPlane);
+  createEnemyPlanes();
 
   scoreLabel = new Plane({
     x: 0,
@@ -242,14 +247,18 @@ function moveEnemy() {
   for(let i=0; i < enemyArray.length; i++){
     const enemyPlane = enemyArray[i];
     const enemyPlaneShape = enemyArray[i].enemy;
-    enemyPlane.xMovement = map(noise(enemyPlane.xNoiseOffset), 0, 1, -0.3, 0.3);
-    enemyPlane.yMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.1, 0.1);
-    enemyPlane.zMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.3, -0.6);
-    console.log(enemyPlaneShape.getZ())
-    enemyPlaneShape.nudge(enemyPlane.xMovement, enemyPlane.yMovement, enemyPlane.zMovement);
-    enemyPlane.xNoiseOffset += 0.01;
-    enemyPlane.yNoiseOffset += 0.01;
-    enemyPlane.zNoiseOffset += 0.01;
+    if(enemyPlane.state === "idle"){
+      enemyPlane.xMovement = map(noise(enemyPlane.xNoiseOffset), 0, 1, -0.3, 0.3);
+      enemyPlane.yMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.1, 0.1);
+      enemyPlane.zMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.3, -0.6);
+      enemyPlaneShape.nudge(enemyPlane.xMovement, enemyPlane.yMovement, enemyPlane.zMovement);
+      enemyPlane.xNoiseOffset += 0.01;
+      enemyPlane.yNoiseOffset += 0.01;
+      enemyPlane.zNoiseOffset += 0.01;
+    }
+    else if(enemyPlane.state === "spin") {
+      spinEnemy(enemyPlane, enemyPlaneShape);
+    }
   }
 }
 
@@ -308,29 +317,60 @@ class Projectile {
 }
 
 class EnemyPlane {
-  constructor() {
+  constructor(x, y, z) {
     this.enemy = new OBJ({
       asset: 'enemy_obj',
       mtl: 'enemy_mtl',
-      x: 0,
-      y: -1.3,
-      z: -15,
-      rotationY: 90,
+      x: x,
+      y: y,
+      z: z,
+      rotationY: 390,
       scaleX: 1,
       scaleY: 1,
       scaleZ: 1,
     });
+    this.facing = "north"; // direction plane is facing
+    this.state = "spin";
+    this.rotation = 0;
     this.xNoiseOffset = random(0, 1000);
     this.yNoiseOffset = random(1000, 2000);
     this.zNoiseOffset = random(2000, 3000);
-    this.xMovement = 0;
-    this.yMovement = 0;
-    this.zMovement = 0;
+    this.xMovement = -0.5;
+    this.yMovement = -0.5;
+    this.zMovement = -0.5;
     this.hitDist = 1.4
     this.enemy.tag.object3D.userData.enemyPlane = true;
     this.enemy.tag.object3D.userData.hitDist = this.hitDist;
     world.add(this.enemy);
   }
+}
+
+function spinEnemy(enemyPlane, enemyPlaneShape){
+  if(enemyPlane.rotation === 180) {
+    enemyPlane.rotation = 0;
+    enemyPlane.state = "still";
+  }
+  if(enemyPlane.facing === "north") {
+    enemyPlane.zMovement += 0.017 ;
+    enemyPlaneShape.nudge(0, 0.1, enemyPlane.zMovement);
+    enemyPlaneShape.spinZ(3);
+  }
+  else if(enemyPlane.facing === "south") {
+    enemyPlane.zMovement -= 0.017 ;
+    enemyPlaneShape.nudge(0, 0.1, enemyPlane.zMovement);
+    enemyPlaneShape.spinZ(3);
+  }
+  else if(enemyPlane.facing === "east") {
+    enemyPlane.xMovement -= 0.017 ;
+    enemyPlaneShape.nudge(enemyPlane.xMovement, 0.1, 0);
+    enemyPlaneShape.spinZ(3);
+  }
+  else if(enemyPlane.facing === "west") {
+    enemyPlane.xMovement += 0.017 ;
+    enemyPlaneShape.nudge(enemyPlane.xMovement, 0.1, 0);
+    enemyPlaneShape.spinZ(3);
+  }
+  enemyPlane.rotation += 3;
 }
 
 class Asteroid {
