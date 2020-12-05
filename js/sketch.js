@@ -324,7 +324,7 @@ class EnemyPlane {
       x: x,
       y: y,
       z: z,
-      rotationY: 390,
+      rotationY: 90,
       scaleX: 1,
       scaleY: 1,
       scaleZ: 1,
