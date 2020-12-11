@@ -35,7 +35,7 @@ function preload() {
 
 function setup() {
   noCanvas();
-  world = new World('VRScene');
+  world = new World('VRScene', 'mouse', 'mouseMove');
   world.camera.cursor.show();
   world.setFlying(true);
   container = new Container3D({});
