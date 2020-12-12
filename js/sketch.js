@@ -3,7 +3,7 @@ var world;
 var sensor; // will find objects in front/below the user
 var elevation;
 var health = 100;
-var state = 'playing';
+var state = 'menu';
 var asteroidArray = [];
 var enemyArray = [];
 var ally = [];
@@ -19,6 +19,7 @@ var scoreLabel;
 var speedLabel;
 var healthLabel;
 var blankPlane;
+var startScreenMessage;
 // by default render first objects in front of player
 var firstAsteroids = true;
 var firstEnemies = true;
@@ -85,6 +86,21 @@ function setup() {
     transparent: true,
     opacity: 0
   });
+  startScreenMessage = new Plane({
+    x: 0,
+    y: 0,
+    z: 0,
+    scaleX: 2.5,
+    scaleY: 2.5,
+    width: 1,
+    height: 1,
+    transparent: true,
+    opacity: 0
+  });
+  container.addChild(startScreenMessage );
+  // tell user it's game over
+  startScreenMessage .tag.setAttribute('text',
+    'value: ' + ('Protect The Ally Convoy!\n\n{spacebar} to shoot') + '; color: rgb(0,255,255); align: center;');
 
   speedLabel = new Plane({
     x: 0,
@@ -125,9 +141,9 @@ function mousePressed() {
   if (state === "crash") {
     //restartGame();
   } else {
-    // projectiles.push(new Projectile());
-    // shotSound.play();
-    // shotDelay = 0;
+    projectiles.push(new Projectile());
+    shotSound.play();
+    shotDelay = 0;
   }
 }
 
@@ -147,6 +163,11 @@ function decreaseSpeed() {
 
 function keyPressed() {
   if (keyCode === 32) { // space bar pressed
+    if(state === "menu"){
+      state = "playing";
+      container.remove(startScreenMessage);
+      return;
+    }
     projectiles.push(new Projectile());
     shotSound.play();
   } else if (keyCode === 87) {
@@ -173,6 +194,7 @@ function moveEnemyProjectiles() {
     const p = world.getUserPosition();
     const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, p.x, p.y, p.z);
     const collideWithUser = collidedWithUser(projectilePosition);
+
     // if (d > 100) {
     //   world.remove(enemyProjectiles[i].container);
     //   enemyProjectiles.splice(i, 1);
@@ -320,6 +342,11 @@ function enemyAttack(enemyPlane, enemyPlaneShape) {
   // nudge the container toward this position
   enemyPlaneShape.nudge(xDiff * 0.01, yDiff * 0.01, zDiff * 0.01);
   if (enemyPlane.attackDelay === enemyPlane.attackInterval) {
+    const chancesOfHitting = int(random(0, 100));
+    if(chancesOfHitting <= 20) {
+      health -= int(random(2, 10));
+      health = constrain(health, 0, 100);
+    }
     enemyProjectiles.push(
       new EnemyProjectile(
         c.x,
@@ -522,7 +549,7 @@ class EnemyPlane {
     this.hitDist = 1.4;
     //attack vars
     this.attackDelay = 0;
-    this.attackInterval = 14;
+    this.attackInterval = 28;
     this.enemy.tag.object3D.userData.enemyPlane = true;
     this.enemy.tag.object3D.userData.hitDist = this.hitDist;
     world.add(this.enemy);
