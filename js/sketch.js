@@ -1,4 +1,4 @@
-/*jshint esversion: 10 */
+/* jshint esversion: 10 */
 var world;
 var sensor; // will find objects in front/below the user
 var elevation;
@@ -28,7 +28,7 @@ var currentRender = 0;
 var renderCushion = 80; //distance to start rendering before reaching render distance
 var asteroidDensity = Math.round(0.1 * renderDistance);
 // var enemyPlaneDensity = Math.round(0.01 * renderDistance);
-var enemyPlaneDensity = Math.round(0.02 * renderDistance);;
+var enemyPlaneDensity = Math.round(0.02 * renderDistance);
 var distanceTraveled = 0;
 // to increase performance:
 // decrease renderDistance
@@ -154,12 +154,12 @@ function keyPressed() {
     decreaseSpeed();
   }
 }
+
 function collidedWithUser(projectilePosition) {
   const p = ally.ship.getWorldPosition();
   const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, p.x, p.y, p.z);
-  if(d <= 1.4) {
+  if (d <= 1.4) {
     health -= 15;
-    alert("hit")
     return true;
   }
   return false;
@@ -206,7 +206,7 @@ function checkCollisions(objectArray, objectType, projectilePosition) {
     const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, object.getX(), object.getY(), object.getZ());
     if (d <= objectArray[j].hitDist) { // asteroid hit
       world.remove(object);
-      if(objectType === "enemy") {
+      if (objectType === "enemy") {
         score += 1;
       }
       objectArray.splice(j, 1);
@@ -302,44 +302,44 @@ function enemyAttack(enemyPlane, enemyPlaneShape) {
   let p = ally.ship.getWorldPosition();
 
   // get position of cone container
-		let c = enemyPlaneShape.getWorldPosition();
+  let c = enemyPlaneShape.getWorldPosition();
 
-		// compute a rotation vector from thenemy  to the object to look at
-		let v = new THREE.Vector3()
-		v.subVectors(p, c).add(c);
+  // compute a rotation vector from thenemy  to the object to look at
+  let v = new THREE.Vector3()
+  v.subVectors(p, c).add(c);
 
-		// tell the enemy to look at the object
-		enemyPlaneShape.tag.object3D.lookAt( v );
+  // tell the enemy to look at the object
+  enemyPlaneShape.tag.object3D.lookAt(v);
 
-    // now compute how far off we are from this position
-    var xDiff = p.x - enemyPlaneShape.getX();
-    var yDiff = p.y - enemyPlaneShape.getY();
-    var zDiff = p.z - enemyPlaneShape.getZ();
-    // nudge the container toward this position
-    enemyPlaneShape.nudge(xDiff * 0.01, yDiff * 0.01, zDiff * 0.01);
-    if(enemyPlane.attackDelay === enemyPlane.attackInterval) {
-      enemyProjectiles.push(
-        new EnemyProjectile(
-          c.x,
-          c.y,
-          c.z,
-          degrees(enemyPlaneShape.tag.object3D.rotation._x),
-          degrees(enemyPlaneShape.tag.object3D.rotation._y),
-          degrees(enemyPlaneShape.tag.object3D.rotation._z)
-        )
-      );
-      enemyPlane.attackDelay = 0;
-    }
+  // now compute how far off we are from this position
+  var xDiff = p.x - enemyPlaneShape.getX();
+  var yDiff = p.y - enemyPlaneShape.getY();
+  var zDiff = p.z - enemyPlaneShape.getZ();
+  // nudge the container toward this position
+  enemyPlaneShape.nudge(xDiff * 0.01, yDiff * 0.01, zDiff * 0.01);
+  if (enemyPlane.attackDelay === enemyPlane.attackInterval) {
+    enemyProjectiles.push(
+      new EnemyProjectile(
+        c.x,
+        c.y,
+        c.z,
+        degrees(enemyPlaneShape.tag.object3D.rotation._x),
+        degrees(enemyPlaneShape.tag.object3D.rotation._y),
+        degrees(enemyPlaneShape.tag.object3D.rotation._z)
+      )
+    );
+    enemyPlane.attackDelay = 0;
+  }
 }
 
-function moveAlly () {
-  if(ally.state === "idle"){
+function moveAlly() {
+  if (ally.state === "idle") {
     ally.xMovement = map(noise(ally.xNoiseOffset), 0, 1, -0.3, 0.3);
     ally.yMovement = map(noise(ally.yNoiseOffset), 0, 1, -0.1, 0.1);
     ally.zMovement = map(noise(ally.zNoiseOffset), 0, 1, -0.1, -0.3);
     ally.ship.nudge(ally.xMovement, ally.yMovement, ally.zMovement);
-    	// make sure it doesn't leave the middle of the screen
-    ally.ship.constrainPosition(-70, 70, 2, 30)
+    // make sure it doesn't leave the middle of the screen
+    ally.ship.constrainPosition(-70, 70, 2, 30);
     ally.xNoiseOffset += 0.01;
     ally.yNoiseOffset += 0.01;
     ally.zNoiseOffset += 0.01;
@@ -348,11 +348,11 @@ function moveAlly () {
 
 function moveEnemy() {
 
-  for(let i=0; i < enemyArray.length; i++){
+  for (let i = 0; i < enemyArray.length; i++) {
     const enemyPlane = enemyArray[i];
     const enemyPlaneShape = enemyArray[i].enemy;
 
-    if(enemyPlane.state === "idle"){
+    if (enemyPlane.state === "idle") {
       enemyPlane.xMovement = map(noise(enemyPlane.xNoiseOffset), 0, 1, -0.3, 0.3);
       enemyPlane.yMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.1, 0.1);
       enemyPlane.zMovement = map(noise(enemyPlane.zNoiseOffset), 0, 1, -0.3, -0.6);
@@ -360,11 +360,9 @@ function moveEnemy() {
       enemyPlane.xNoiseOffset += 0.01;
       enemyPlane.yNoiseOffset += 0.01;
       enemyPlane.zNoiseOffset += 0.01;
-    }
-    else if(enemyPlane.state === "attack") {
+    } else if (enemyPlane.state === "attack") {
       enemyAttack(enemyPlane, enemyPlaneShape);
-    }
-    else if(enemyPlane.state === "spin") {
+    } else if (enemyPlane.state === "spin") {
       spinEnemy(enemyPlane, enemyPlaneShape);
     }
   }
@@ -372,7 +370,7 @@ function moveEnemy() {
 
 function draw() {
   if (state === "playing") {
-    if(health <= 0){
+    if (health <= 0) {
       loadGameOver();
     }
     document.getElementById("theSky").setAttribute("position", `${world.camera.getX()} ${world.camera.getY()} ${world.camera.getZ()}`);
@@ -440,7 +438,7 @@ class Projectile {
     world.add(this.container);
     const randInt = int(random(0, 2));
     let cannonX = 1;
-    if(randInt === 0) {
+    if (randInt === 0) {
       cannonX = -1;
     }
     this.projectile = new Cylinder({
@@ -504,7 +502,7 @@ class EnemyPlane {
       scaleY: 1,
       scaleZ: 1,
     });
-    this.enemy.spinY(-90)
+    this.enemy.spinY(-90);
     this.facing = "south"; // direction plane is facing
     this.state = "attack";
     this.rotation = 0;
@@ -514,7 +512,7 @@ class EnemyPlane {
     this.xMovement = -0.5;
     this.yMovement = -0.5;
     this.zMovement = -0.5;
-    this.hitDist = 1.4
+    this.hitDist = 1.4;
     //attack vars
     this.attackDelay = 0;
     this.attackInterval = 14;
@@ -525,7 +523,7 @@ class EnemyPlane {
 }
 
 function spinEnemy(enemyPlane, enemyPlaneShape) {
-  if(enemyPlane.rotation === 180) {
+  if (enemyPlane.rotation === 180) {
     enemyPlane.rotation = 0;
     enemyPlane.state = "still";
   }
@@ -533,45 +531,36 @@ function spinEnemy(enemyPlane, enemyPlaneShape) {
   enemyPlaneShape.spinY(-3);
 }
 
-function loopEnemy(enemyPlane, enemyPlaneShape){
-  // console.log(degrees(enemyPlaneShape.tag.object3D.rotation._x),
-  //   degrees(enemyPlaneShape.tag.object3D.rotation._y),
-  //   degrees(enemyPlaneShape.tag.object3D.rotation._z))
+function loopEnemy(enemyPlane, enemyPlaneShape) {
   const rotX = enemyPlaneShape.tag.object3D.rotation._x;
   const rotY = enemyPlaneShape.tag.object3D.rotation._x;
-  if(enemyPlane.rotation === 180) {
+  if (enemyPlane.rotation === 180) {
     enemyPlane.rotation = 0;
     enemyPlane.state = "still";
     if (enemyPlane.facing === "west") {
       enemyPlane.facing = "east";
-    }
-    else if (enemyPlane.facing === "north") {
+    } else if (enemyPlane.facing === "north") {
       enemyPlane.facing = "south";
-    }
-    else if (enemyPlane.facing === "east") {
+    } else if (enemyPlane.facing === "east") {
       enemyPlane.facing = "west";
-    }
-    else {
-        enemyPlane.facing = "north";
+    } else {
+      enemyPlane.facing = "north";
     }
   }
-  if(enemyPlane.facing === "north") {
-    enemyPlane.zMovement += 0.017 ;
+  if (enemyPlane.facing === "north") {
+    enemyPlane.zMovement += 0.017;
     enemyPlaneShape.nudge(0, 0.1, enemyPlane.zMovement);
     enemyPlaneShape.spinX(-3);
-  }
-  else if(enemyPlane.facing === "south") {
-    enemyPlane.zMovement -= 0.017 ;
+  } else if (enemyPlane.facing === "south") {
+    enemyPlane.zMovement -= 0.017;
     enemyPlaneShape.nudge(0, 0.1, enemyPlane.zMovement);
     enemyPlaneShape.spinX(3);
-  }
-  else if(enemyPlane.facing === "east") {
-    enemyPlane.xMovement -= 0.017 ;
+  } else if (enemyPlane.facing === "east") {
+    enemyPlane.xMovement -= 0.017;
     enemyPlaneShape.nudge(enemyPlane.xMovement, 0.1, 0);
     enemyPlaneShape.spinX(3);
-  }
-  else if(enemyPlane.facing === "west") {
-    enemyPlane.xMovement += 0.017 ;
+  } else if (enemyPlane.facing === "west") {
+    enemyPlane.xMovement += 0.017;
     enemyPlaneShape.nudge(enemyPlane.xMovement, 0.1, 0);
     enemyPlaneShape.spinX(-3);
   }
