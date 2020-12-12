@@ -58,13 +58,14 @@ function createEnemyPlanes() {
 }
 
 function setup() {
-
   noCanvas();
   world = new World('VRScene', 'mouse', 'mouseMove');
   world.camera.cursor.show();
   world.setFlying(true);
   container = new Container3D({});
   createAlly();
+
+  enemyArray.push(new EnemyPlane());
 
   scoreLabel = new Plane({
     x: 0,
@@ -208,6 +209,7 @@ function checkCollisions(objectArray, objectType, projectilePosition) {
       world.remove(object);
       if (objectType === "enemy") {
         score += 1;
+        enemyArray.push(new EnemyPlane());
       }
       objectArray.splice(j, 1);
       return true;
@@ -243,7 +245,7 @@ function renderNearbyObjects() {
   if (distanceTraveled < -currentRender + renderCushion) {
     currentRender += renderDistance;
     createAsteroids();
-    createEnemyPlanes();
+    // createEnemyPlanes();
   }
 }
 
@@ -490,7 +492,12 @@ class Ally {
 }
 
 class EnemyPlane {
-  constructor(start, end) {
+  constructor(
+    start=world.getUserPosition().z,
+    end=world.getUserPosition().z-renderDistance
+  )
+    {
+      console.log(start,end)
     this.enemy = new OBJ({
       asset: 'enemy_obj',
       mtl: 'enemy_mtl',
