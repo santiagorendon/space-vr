@@ -2,27 +2,32 @@
 var world;
 var sensor; // will find objects in front/below the user
 var elevation;
+var health = 100;
 var state = 'playing';
 var asteroidArray = [];
 var enemyArray = [];
 var projectiles = [];
+var enemyProjectiles = [];
 var shotDelay = 3;
 var score = 0;
 var user;
 var sound;
-var distanceTraveled = 0;
 var planeSpeed = 0.05;
 var maxPlaneSpeed = 0.65;
 var scoreLabel;
 var speedLabel;
+var healthLabel;
 var blankPlane;
 // by default render first objects in front of player
 var firstAsteroids = true;
 /* graphic settings */
-var renderDistance = 200;
+var renderDistance = 400;
 var currentRender = 0;
 var renderCushion = 80; //distance to start rendering before reaching render distance
-var asteroidDensity = Math.round(0.1 * renderDistance);
+var asteroidDensity = Math.round(0.5 * renderDistance);
+// var enemyPlaneDensity = Math.round(0.01 * renderDistance);
+var enemyPlaneDensity = 1;
+var distanceTraveled = renderDistance;
 // to increase performance:
 // decrease renderDistance
 // decrease density of objects
@@ -34,13 +39,14 @@ function preload() {
 }
 
 function createEnemyPlanes() {
-  for(let i=0; i < 1; i++){
-    let enemyPlane = new EnemyPlane(random(-4, 4), random(-4, 4), -random(4, 8));
+  for(let i=0; i <= enemyPlaneDensity; i++){
+    let enemyPlane = new EnemyPlane();
     enemyArray.push(enemyPlane);
   }
 }
 
 function setup() {
+
   noCanvas();
   world = new World('VRScene');
   world.camera.cursor.show();
@@ -58,10 +64,19 @@ function setup() {
     transparent: true,
     opacity: 0
   });
+  healthLabel = new Plane({
+    x: 0,
+    y: -0.3,
+    z: 0,
+    width: 1,
+    height: 1,
+    transparent: true,
+    opacity: 0
+  });
 
   speedLabel = new Plane({
     x: 0,
-    y: -0.3,
+    y: -0.4,
     z: 0,
     width: 1,
     height: 1,
@@ -81,6 +96,7 @@ function setup() {
   });
   container.addChild(cockpitImage);
   container.addChild(scoreLabel);
+  container.addChild(healthLabel);
   container.addChild(speedLabel);
   world.camera.cursor.addChild(container);
 
@@ -97,9 +113,9 @@ function mousePressed() {
   if (state === "crash") {
     //restartGame();
   } else {
-    projectiles.push(new Projectile());
-    shotSound.play();
-    shotDelay = 0;
+    // projectiles.push(new Projectile());
+    // shotSound.play();
+    // shotDelay = 0;
   }
 }
 
@@ -127,12 +143,36 @@ function keyPressed() {
     decreaseSpeed();
   }
 }
+function collidedWithUser(projectilePosition) {
+  const p = world.getUserPosition();
+  const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, p.x, p.y, p.z);
+  if(d <= 1.4) {
+    health -= 35;
+    return true;
+  }
+  return false;
+}
 
-function drawProjectiles() {
+function moveEnemyProjectiles() {
+  for (let i = 0; i < enemyProjectiles.length; i++) {
+    enemyProjectiles[i].move();
+    const projectilePosition = enemyProjectiles[i].projectile.getWorldPosition();
+    const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, world.camera.getX(), world.camera.getY(), world.camera.getZ());
+    const collideWithUser = collidedWithUser(projectilePosition);
+    if (d > 100 || collideWithUser) {
+      world.remove(enemyProjectiles[i].container);
+      enemyProjectiles.splice(i, 1);
+      i -= 1;
+      continue;
+    }
+  }
+}
+
+function moveProjectiles() {
   for (let i = 0; i < projectiles.length; i++) {
     projectiles[i].move();
     // get WORLD position for this projectile
-    var projectilePosition = projectiles[i].projectile.getWorldPosition();
+    const projectilePosition = projectiles[i].projectile.getWorldPosition();
     const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, world.camera.getX(), world.camera.getY(), world.camera.getZ());
     const collideWithAsteroid = checkCollisions(asteroidArray, "sphere", projectilePosition);
     const collideWithEnemy = checkCollisions(enemyArray, "enemy", projectilePosition);
@@ -142,10 +182,7 @@ function drawProjectiles() {
       projectiles.splice(i, 1);
       i -= 1;
       continue;
-    } else if (checkCollisions(enemyArray, "enemy", projectilePosition)) {
-
     }
-
   }
 }
 
@@ -156,6 +193,9 @@ function checkCollisions(objectArray, objectType, projectilePosition) {
     const d = dist(projectilePosition.x, projectilePosition.y, projectilePosition.z, object.getX(), object.getY(), object.getZ());
     if (d <= objectArray[j].hitDist) { // asteroid hit
       world.remove(object);
+      if(objectType === "enemy") {
+        score += 1;
+      }
       objectArray.splice(j, 1);
       return true;
     }
@@ -165,7 +205,16 @@ function checkCollisions(objectArray, objectType, projectilePosition) {
 
 function removeAsteroids() {
   for (let i = 0; i < asteroidArray.length; i++) {
-    if (asteroidArray[i].sphere.getZ() - 5 > distanceTraveled) { //if plane passed asteroid
+    const p = world.getUserPosition();
+    const d = dist(
+      asteroidArray[i].sphere.x,
+      asteroidArray[i].sphere.y,
+      asteroidArray[i].sphere.z,
+      p.x,
+      p.y,
+      p.z
+    );
+    if (renderDistance < d) { //if asteroid out of renderDistance
       world.remove(asteroidArray[i].sphere);
       asteroidArray.splice(i, 1);
       i -= 1;
@@ -174,27 +223,28 @@ function removeAsteroids() {
 }
 
 function createAsteroids() {
-  let startPoint = distanceTraveled - renderCushion;
-  // start rendering asteroid closer if its first set rendered
-  if (firstAsteroids) {
-    startPoint = 0;
-    firstAsteroids = false;
-  }
+  // let startPoint = distanceTraveled - renderCushion;
+  // // start rendering asteroid closer if its first set rendered
+  // if (firstAsteroids) {
+  //   startPoint = 0;
+  //   firstAsteroids = false;
+  // }
   for (let i = 0; i < asteroidDensity; i++) {
-    asteroidArray.push(new Asteroid(startPoint, startPoint - renderDistance));
+    asteroidArray.push(new Asteroid());
   }
 }
 
 function renderNearbyObjects() {
   // render nearby asteroids every render distance traveled
-  if (distanceTraveled < -currentRender + renderCushion) {
-    currentRender += renderDistance;
+  if (distanceTraveled > renderDistance/3) {
+    distanceTraveled = 0;
     createAsteroids();
   }
 }
 
 function drawScoreBoard() {
   scoreLabel.tag.setAttribute('text', 'value: ' + (score) + ' targets ; color: rgb(255,255,255); align: center;');
+  healthLabel.tag.setAttribute('text', 'value: ' + (health) + ' health ; color: rgb(255,255,255); align: center;');
   speedLabel.tag.setAttribute('text', 'value: ' + (Math.round(planeSpeed * 10000)) + ' mph ; color: rgb(255,255,255); align: center;');
 }
 
@@ -208,6 +258,7 @@ function deleteGameObjects() {
 }
 
 function loadGameOver() {
+  state = 'crash';
   deleteGameObjects();
   crashSound.play();
   engineSound.stop();
@@ -234,19 +285,57 @@ function collisionDetection() {
   //if we hit an object below us
   if (whatsBelow && whatsBelow.distance < 0.98) {
     loadGameOver();
-    state = 'crash';
   }
   // if we collide with asteroid dont move
   if (objectAhead && objectAhead.distance < objectAhead.object.el.object3D.userData.hitDist && (objectAhead.object.el.object3D.userData.asteroid || objectAhead.object.el.object3D.userData.enemyPlane)) {
     loadGameOver();
-    state = 'crash';
   }
 }
 
+function enemyAttack(enemyPlane, enemyPlaneShape) {
+  enemyPlane.attackDelay += 1;
+  let p = world.getUserPosition();
+
+  // get position of cone container
+		let c = enemyPlaneShape.getWorldPosition();
+
+		// compute a rotation vector from thenemy  to the object to look at
+		let v = new THREE.Vector3()
+		v.subVectors(p, c).add(c);
+
+		// tell the enemy to look at the object
+		enemyPlaneShape.tag.object3D.lookAt( v );
+
+    // now compute how far off we are from this position
+    var xDiff = p.x - enemyPlaneShape.getX();
+    var yDiff = p.y - enemyPlaneShape.getY();
+    var zDiff = p.z - enemyPlaneShape.getZ();
+    // nudge the container toward this position
+    enemyPlaneShape.nudge(xDiff * 0.01, yDiff * 0.01, zDiff * 0.01);
+
+
+    if(enemyPlane.attackDelay === enemyPlane.attackInterval) {
+      console.log(enemyPlaneShape.tag.object3D.rotation._x);
+      enemyProjectiles.push(
+        new EnemyProjectile(
+          c.x,
+          c.y,
+          c.z,
+          degrees(enemyPlaneShape.tag.object3D.rotation._x),
+          degrees(enemyPlaneShape.tag.object3D.rotation._y),
+          degrees(enemyPlaneShape.tag.object3D.rotation._z)
+        )
+      );
+      enemyPlane.attackDelay = 0;
+    }
+}
+
 function moveEnemy() {
+
   for(let i=0; i < enemyArray.length; i++){
     const enemyPlane = enemyArray[i];
     const enemyPlaneShape = enemyArray[i].enemy;
+
     if(enemyPlane.state === "idle"){
       enemyPlane.xMovement = map(noise(enemyPlane.xNoiseOffset), 0, 1, -0.3, 0.3);
       enemyPlane.yMovement = map(noise(enemyPlane.yNoiseOffset), 0, 1, -0.1, 0.1);
@@ -256,6 +345,9 @@ function moveEnemy() {
       enemyPlane.yNoiseOffset += 0.01;
       enemyPlane.zNoiseOffset += 0.01;
     }
+    else if(enemyPlane.state === "attack") {
+      enemyAttack(enemyPlane, enemyPlaneShape);
+    }
     else if(enemyPlane.state === "spin") {
       spinEnemy(enemyPlane, enemyPlaneShape);
     }
@@ -264,6 +356,9 @@ function moveEnemy() {
 
 function draw() {
   if (state === "playing") {
+    if(health <= 0){
+      loadGameOver();
+    }
     document.getElementById("theSky").setAttribute("position", `${world.camera.getX()} ${world.camera.getY()} ${world.camera.getZ()}`);
     shotDelay += 1;
     // increase speed if taking off
@@ -272,10 +367,72 @@ function draw() {
     moveEnemy();
     // dont render objects that the plane no longer sees
     removeAsteroids();
-    drawProjectiles();
+    moveProjectiles();
+    moveEnemyProjectiles();
     drawScoreBoard();
-    world.moveUserForward(planeSpeed); // move
-    distanceTraveled = world.camera.getZ();
+    //world.moveUserForward(planeSpeed); // move
+    distanceTraveled += planeSpeed;
+  }
+}
+
+class EnemyProjectile {
+  constructor(x, y, z, rotX, rotY, rotZ) {
+    var userRotation = world.getUserRotation();
+    this.projectileSpeed = -1;
+    this.container = new Container3D({
+      x: x,
+      y: y,
+      z: z,
+      rotationX: rotX,
+      rotationY: rotY,
+      rotationZ: rotZ
+    });
+
+    world.add(this.container);
+    // let p = world.getUserPosition();
+    // let c = this.container.tag.object3D.position;
+    //
+    // // compute a rotation vector from thenemy  to the object to look at
+    // let v = new THREE.Vector3()
+    // v.subVectors(p, c).add(c);
+    //
+    // // tell the enemy to look at the object
+    // this.container.tag.object3D.lookAt( v );
+
+    this.projectile = new Cylinder({
+      x: 0,
+      y: 0,
+      z: 0,
+      height: 1,
+      radius: 0.1,
+      rotationX: -90,
+      red: 199,
+      green: 14,
+      blue: 32
+    });
+    this.container.addChild(this.projectile);
+
+
+
+  }
+  move() {
+
+
+    //var vectorHUD = new THREE.Vector3();
+    // console.log("420", world.camera)
+//vectorHUD.setFromMatrixPosition(world.camera.cursor.tag.object3D.matrixWorld);
+// let p = world.getUserPosition();
+// // now compute how far off we are from this position
+// var xDiff = p.x - this.container.getX();
+// var yDiff = p.y - this.container.getY();
+// var zDiff = p.z - this.container.getZ();
+//   console.log(xDiff, yDiff, zDiff)
+// // nudge the container toward this position
+// this.container.nudge(xDiff * 0.05, yDiff * 0.05, zDiff * 0.05);
+// console.log("YEEEES")
+
+
+    this.projectile.nudge(0, 0, -this.projectileSpeed);
   }
 }
 
@@ -289,7 +446,7 @@ class Projectile {
     this.container = new Container3D({
       x: userPosition.x,
       y: userPosition.y,
-      z: userPosition.z - 0.8,
+      z: userPosition.z,
       rotationX: userRotation.x,
       rotationY: userRotation.y,
       rotationZ: userRotation.z
@@ -308,6 +465,8 @@ class Projectile {
     });
     // add the projectile to the container
     this.container.addChild(this.projectile);
+
+
   }
   move() {
     // easy peasy - the projectile just moves along the z-axis by a certain amount
@@ -317,19 +476,24 @@ class Projectile {
 }
 
 class EnemyPlane {
-  constructor(x, y, z) {
+  constructor() {
+    const p = world.getUserPosition();
     this.enemy = new OBJ({
       asset: 'enemy_obj',
       mtl: 'enemy_mtl',
-      x: x,
-      y: y,
-      z: z,
-      rotationY: 90,
+      // x: random(p.x-50, p.x+50),
+      // y: random(p.y-50, p.y+50),
+      // z: random(p.z-50, p.z-400),
+      x: 0,
+      y: 0,
+      z: -10,
+      rotationY: 0, 
       scaleX: 1,
       scaleY: 1,
       scaleZ: 1,
     });
-    this.facing = "north"; // direction plane is facing
+    this.enemy.spinY(-90)
+    this.facing = "south"; // direction plane is facing
     this.state = "spin";
     this.rotation = 0;
     this.xNoiseOffset = random(0, 1000);
@@ -339,47 +503,77 @@ class EnemyPlane {
     this.yMovement = -0.5;
     this.zMovement = -0.5;
     this.hitDist = 1.4
+    //attack vars
+    this.attackDelay = 0;
+    this.attackInterval = 100;
     this.enemy.tag.object3D.userData.enemyPlane = true;
     this.enemy.tag.object3D.userData.hitDist = this.hitDist;
     world.add(this.enemy);
   }
 }
 
-function spinEnemy(enemyPlane, enemyPlaneShape){
+function spinEnemy(enemyPlane, enemyPlaneShape) {
   if(enemyPlane.rotation === 180) {
     enemyPlane.rotation = 0;
     enemyPlane.state = "still";
   }
+  enemyPlane.rotation += 3;
+  enemyPlaneShape.spinY(-3);
+}
+
+function loopEnemy(enemyPlane, enemyPlaneShape){
+  // console.log(degrees(enemyPlaneShape.tag.object3D.rotation._x),
+  //   degrees(enemyPlaneShape.tag.object3D.rotation._y),
+  //   degrees(enemyPlaneShape.tag.object3D.rotation._z))
+  const rotX = enemyPlaneShape.tag.object3D.rotation._x;
+  const rotY = enemyPlaneShape.tag.object3D.rotation._x;
+  if(enemyPlane.rotation === 180) {
+    enemyPlane.rotation = 0;
+    enemyPlane.state = "still";
+    if (enemyPlane.facing === "west") {
+      enemyPlane.facing = "east";
+    }
+    else if (enemyPlane.facing === "north") {
+      enemyPlane.facing = "south";
+    }
+    else if (enemyPlane.facing === "east") {
+      enemyPlane.facing = "west";
+    }
+    else {
+        enemyPlane.facing = "north";
+    }
+  }
   if(enemyPlane.facing === "north") {
     enemyPlane.zMovement += 0.017 ;
     enemyPlaneShape.nudge(0, 0.1, enemyPlane.zMovement);
-    enemyPlaneShape.spinZ(3);
+    enemyPlaneShape.spinX(-3);
   }
   else if(enemyPlane.facing === "south") {
     enemyPlane.zMovement -= 0.017 ;
     enemyPlaneShape.nudge(0, 0.1, enemyPlane.zMovement);
-    enemyPlaneShape.spinZ(3);
+    enemyPlaneShape.spinX(3);
   }
   else if(enemyPlane.facing === "east") {
     enemyPlane.xMovement -= 0.017 ;
     enemyPlaneShape.nudge(enemyPlane.xMovement, 0.1, 0);
-    enemyPlaneShape.spinZ(3);
+    enemyPlaneShape.spinX(3);
   }
   else if(enemyPlane.facing === "west") {
     enemyPlane.xMovement += 0.017 ;
     enemyPlaneShape.nudge(enemyPlane.xMovement, 0.1, 0);
-    enemyPlaneShape.spinZ(3);
+    enemyPlaneShape.spinX(-3);
   }
   enemyPlane.rotation += 3;
 }
 
 class Asteroid {
   constructor(start, end) {
-    let radius = random(0, 6);
+    const radius = random(0, 6);
+    const p = world.getUserPosition();
     this.sphere = new Sphere({
-      x: random(-80, 80),
-      y: random(2, 30),
-      z: random(start, end),
+      x: random(p.x-150, p.x+150),
+      y: random(p.y-200, p.y+200),
+      z: random(p.z-400, p.z+400),
       asset: "asteroid",
       rotationX: random(0, 360),
       radius: radius
